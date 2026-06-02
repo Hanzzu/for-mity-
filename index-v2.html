@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Birthday Surprise V2</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+font-family:system-ui,sans-serif;
+background:#070707;
+color:#fff;
+overflow-x:hidden;
+}
+.page{
+min-height:100vh;
+display:none;
+padding:20px;
+justify-content:center;
+align-items:center;
+}
+.page.active{display:flex}
+.card{
+width:min(420px,100%);
+background:rgba(255,255,255,.06);
+backdrop-filter:blur(15px);
+border-radius:28px;
+padding:24px;
+border:1px solid rgba(255,255,255,.08);
+}
+h1,h2{margin-bottom:12px}
+p{opacity:.8;line-height:1.6}
+input{
+width:100%;
+padding:16px;
+margin:18px 0;
+border:none;
+border-radius:16px;
+background:#1a1a1a;
+color:#fff;
+}
+button{
+width:100%;
+padding:15px;
+border:none;
+border-radius:16px;
+background:#fff;
+font-weight:700;
+cursor:pointer;
+}
+.envelope{
+width:220px;height:140px;
+margin:auto;
+background:#ffd7e7;
+position:relative;
+border-radius:12px;
+cursor:pointer;
+animation:float 3s infinite ease-in-out;
+}
+.envelope:before{
+content:"";
+position:absolute;
+left:0;right:0;top:0;
+margin:auto;
+width:0;height:0;
+border-left:110px solid transparent;
+border-right:110px solid transparent;
+border-top:70px solid #fff;
+transform-origin:top;
+transition:.8s;
+}
+.envelope.open:before{
+transform:rotateX(180deg);
+}
+.letter{
+background:#fff;
+color:#222;
+padding:18px;
+border-radius:20px;
+max-height:65vh;
+overflow:auto;
+}
+.actions{
+position:sticky;
+bottom:0;
+background:#fff;
+padding-top:12px;
+}
+.swipe{
+width:100%;
+height:90px;
+background:#222;
+border-radius:50px;
+position:relative;
+overflow:hidden;
+}
+.knob{
+width:80px;height:80px;
+background:linear-gradient(45deg,#ff9ac8,#caa7ff);
+border-radius:50%;
+position:absolute;
+top:5px;left:5px;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:30px;
+}
+.flower{
+font-size:120px;
+animation:bloom 1s ease;
+}
+@keyframes float{
+50%{transform:translateY(-10px)}
+}
+@keyframes bloom{
+from{transform:scale(.2);opacity:0}
+to{transform:scale(1);opacity:1}
+}
+.hearts{
+position:fixed;inset:0;pointer-events:none;
+}
+.heart{
+position:absolute;
+animation:rise 5s linear forwards;
+}
+@keyframes rise{
+from{transform:translateY(0)}
+to{transform:translateY(-100vh);opacity:0}
+}
+</style>
+</head>
+<body>
+
+<div class="page active" id="p1">
+<div class="card">
+<h1>💖 Ketik namanya dulu</h1>
+<input id="name">
+<button onclick="goEnvelope()">Lanjut</button>
+</div>
+</div>
+
+<div class="page" id="p2">
+<div class="card" style="text-align:center">
+<h2>Ada surat buat <span id="n1"></span></h2>
+<div class="envelope" id="env" onclick="openLetter()"></div>
+<p style="margin-top:20px">Klik amplopnya</p>
+</div>
+</div>
+
+<div class="page" id="p3">
+<div class="card">
+<div class="letter">
+<h2>Untuk <span id="n2"></span> ❤️</h2>
+<p>
+Selamat ulang tahun.<br><br>
+Aku cuma mau bilang terima kasih karena sudah hadir dan membuat hari-hariku lebih berwarna.
+Semoga semua hal baik datang ke hidupmu, semua doa terbaikmu terkabul, dan senyummu selalu terjaga.<br><br>
+Kalau suatu hari kamu capek, ingat selalu ada seseorang yang bangga sama kamu dan selalu mendukungmu.<br><br>
+Happy birthday, cantik. 🌸
+</p>
+<div class="actions">
+<button onclick="show('p4')">Lanjut ke hadiah</button>
+</div>
+</div>
+</div>
+</div>
+
+<div class="page" id="p4">
+<div class="card">
+<h2>👉 Geser ke kanan</h2>
+<div class="swipe" id="swipe">
+<div class="knob" id="knob">🌸</div>
+</div>
+</div>
+</div>
+
+<div class="page" id="p5">
+<div style="text-align:center">
+<div class="flower">💐</div>
+<h1>Happy Birthday <span id="n3"></span> ❤️</h1>
+<p>Semoga harimu seindah bunga ini.</p>
+</div>
+</div>
+
+<div class="hearts" id="hearts"></div>
+
+<script>
+function show(id){
+document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+document.getElementById(id).classList.add('active');
+}
+function goEnvelope(){
+const n=document.getElementById('name').value.trim();
+if(!n)return;
+n1.textContent=n;n2.textContent=n;n3.textContent=n;
+show('p2');
+}
+function openLetter(){
+env.classList.add('open');
+setTimeout(()=>show('p3'),700);
+}
+let start=0;
+const knob=document.getElementById('knob');
+const swipe=document.getElementById('swipe');
+knob.addEventListener('pointerdown',e=>{
+start=e.clientX;
+function move(ev){
+let dx=Math.max(0,Math.min(ev.clientX-start,230));
+knob.style.left=(5+dx)+'px';
+if(dx>180){
+show('p5');
+setInterval(makeHeart,300);
+cleanup();
+}
+}
+function cleanup(){
+window.removeEventListener('pointermove',move);
+window.removeEventListener('pointerup',up);
+}
+function up(){
+knob.style.left='5px';
+cleanup();
+}
+window.addEventListener('pointermove',move);
+window.addEventListener('pointerup',up);
+});
+function makeHeart(){
+const h=document.createElement('div');
+h.className='heart';
+h.innerHTML='💖';
+h.style.left=Math.random()*100+'vw';
+h.style.bottom='0';
+hearts.appendChild(h);
+setTimeout(()=>h.remove(),5000);
+}
+</script>
+</body>
+</html>
