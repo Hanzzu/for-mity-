@@ -1386,9 +1386,7 @@ transition:.5s ease;
 
   <!-- Final -->
   <section id="page-final" class="page final">
-    <div class="final-bg" aria-hidden="true">
-      <img id="bouquetImg" class="hero-bouquet" src="flower.png" alt="Bouquet bunga pink" />
-    </div>
+    <div class="final-bg" aria-hidden="true" id="finalBg"></div>
 
     <div class="final-stage">
       <div class="chip">💖 HAPPY BIRTHDAY, MITA</div>
@@ -1454,6 +1452,7 @@ transition:.5s ease;
 
     typingText: $('typingText'),
     cursor: $('cursor'),
+    finalBg: $('finalBg'),
     bouquetImg: $('bouquetImg'),
     flowerHint: $('flowerHint'),
     messageOverlay: $('messageOverlay'),
@@ -1478,7 +1477,7 @@ transition:.5s ease;
     pages.forEach(p => p.classList.remove('active'));
     const target = $(id);
     if(target) target.classList.add('active');
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    window.scrollTo({ top: 0, behavior: 'auto' });
   }
 
   function lockScreen(){
@@ -1565,9 +1564,8 @@ from chiken katsu 🐣💌`;
     }
 
     if(el.bouquetImg){
-      el.bouquetImg.classList.remove('ready', 'clicked');
-      el.bouquetImg.style.pointerEvents = 'none';
-      el.bouquetImg.style.transform = '';
+      el.bouquetImg.remove();
+      el.bouquetImg = null;
     }
 
     if(el.messageOverlay){
@@ -1579,10 +1577,26 @@ from chiken katsu 🐣💌`;
   function prepareFinalScene(){
     resetFinalScene();
 
+    if(el.finalBg && !el.bouquetImg){
+      const bouquet = document.createElement('img');
+      bouquet.id = 'bouquetImg';
+      bouquet.className = 'hero-bouquet locked';
+      bouquet.src = 'flower.png';
+      bouquet.alt = 'Bouquet bunga pink';
+      bouquet.style.pointerEvents = 'none';
+      bouquet.addEventListener('click', () => {
+        if(!finalClickEnabled || finalMessageShown) return;
+        showFinalMessage();
+      });
+      el.finalBg.appendChild(bouquet);
+      el.bouquetImg = bouquet;
+    }
+
     finalReadyTimer = setTimeout(() => {
       if(!el.flowerHint || !el.bouquetImg) return;
       el.flowerHint.textContent = 'coba sentuh bunganya ya 💕';
       el.flowerHint.classList.add('show');
+      el.bouquetImg.classList.remove('locked');
       el.bouquetImg.classList.add('ready');
       el.bouquetImg.style.pointerEvents = 'auto';
       finalClickEnabled = true;
@@ -1593,6 +1607,8 @@ from chiken katsu 🐣💌`;
     if(finalMessageShown) return;
     finalMessageShown = true;
     finalClickEnabled = false;
+
+    document.body.style.overflow = 'hidden';
 
     if(el.flowerHint){
       el.flowerHint.classList.remove('show');
@@ -1610,7 +1626,12 @@ from chiken katsu 🐣💌`;
     }
 
     setTimeout(() => {
-      document.querySelectorAll('.section').forEach(s=>s.classList.add('show'));
+      if(el.messageOverlay){
+        el.messageOverlay.classList.add('hide');
+      }
+      document.querySelectorAll('#page-final .section.reveal').forEach(s => s.classList.add('show'));
+      document.body.style.overflow = '';
+      document.body.classList.add('unlocked');
       document.querySelector('#letter-section')?.scrollIntoView({
         behavior:'smooth',
         block:'start'
@@ -1719,14 +1740,6 @@ from chiken katsu 🐣💌`;
     spawnFloatingHearts(8);
     if(heartsTimer) clearInterval(heartsTimer);
     heartsTimer = setInterval(() => spawnFloatingHearts(3), 2500);
-
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if(entry.isIntersecting) entry.target.classList.add('show');
-      });
-    }, { threshold: 0.16 });
-
-    document.querySelectorAll('.reveal').forEach(section => observer.observe(section));
   }
 
   // init
@@ -1843,21 +1856,6 @@ from chiken katsu 🐣💌`;
     if(typingTimer) clearInterval(typingTimer);
   });
 })();
-</script>
-
-<script>
-document.addEventListener('DOMContentLoaded',()=>{
- const flower=document.getElementById('bouquetImg');
- const hint=document.getElementById('flowerHint');
- const target=document.getElementById('letter-section');
- if(!flower||!hint||!target) return;
-
- flower.classList.add('locked');
-
- 
-
- 
-});
 </script>
 
 </body>
