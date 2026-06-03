@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Birthday Surprise</title>
+<meta name="theme-color" content="#050505" />
+<style>
+  :root{
+    --bg:#050505;
+    --panel:rgba(255,255,255,.08);
+    --panel-2:rgba(255,255,255,.12);
+    --text:#f7f7f7;
+    --muted:rgba(255,255,255,.72);
+    --pink:#ff86bf;
+    --pink-2:#ffb1d8;
+    --green:#8cf0a0;
+    --green-2:#43c98a;
+    --shadow:0 28px 90px rgba(0,0,0,.42);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    color:var(--text);
+    overflow-x:hidden;
+    overflow-y:auto;
+    background:
+      radial-gradient(circle at 12% 20%, rgba(255,120,186,.24), transparent 22%),
+      radial-gradient(circle at 82% 28%, rgba(140,240,160,.18), transparent 24%),
+      radial-gradient(circle at 50% 76%, rgba(255,255,255,.05), transparent 18%),
+      linear-gradient(180deg, #0a0a0a 0%, #020202 100%);
+  }
+
+  .bg-hearts{
+    position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:0;
+  }
+  .bg-hearts span{
+    position:absolute; left:var(--x); bottom:-10vh; font-size:var(--s); opacity:var(--o);
+    animation: floatUp var(--d) linear infinite; filter: drop-shadow(0 0 8px rgba(255,255,255,.08));
+    user-select:none;
+  }
+  @keyframes floatUp{
+    from{ transform: translateY(0) rotate(0deg) scale(.9); }
+    50%{ transform: translateY(-55vh) rotate(10deg) scale(1.08); }
+    to{ transform: translateY(-120vh) rotate(-6deg) scale(.95); }
+  }
+
+  .page{ position:relative; z-index:1; min-height:100vh; width:100%; display:none; align-items:center; justify-content:center; padding:20px; }
+  .page.active{display:flex}
+  .page.final{display:none}
+  .page.final.active{display:block}
+
+  .card{
+    width:min(460px,100%);
+    background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.05));
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:30px;
+    box-shadow:var(--shadow);
+    backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+    padding:22px;
+  }
+
+  .chip{ display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:999px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.08); color:rgba(255,255,255,.78); font-size:12px; letter-spacing:.04em; text-transform:uppercase; }
+  .title{ font-size:clamp(28px,7vw,42px); line-height:1.02; letter-spacing:-.045em; }
+  .subtitle{ margin-top:10px; color:var(--muted); line-height:1.65; font-size:14px; }
+
+  input{ width:100%; margin-top:16px; padding:16px; border-radius:16px; border:1px solid rgba(255,255,255,.08); background:rgba(0,0,0,.28); color:var(--text); outline:none; font-size:16px; }
+  input::placeholder{color:rgba(255,255,255,.35)}
+
+  .btn{ width:100%; margin-top:14px; padding:15px 16px; border:none; border-radius:16px; font-weight:800; cursor:pointer; transition:transform .16s ease, opacity .16s ease, box-shadow .16s ease; }
+  .btn:active{transform:scale(.985)}
+  .btn.primary{ color:#111; background:linear-gradient(180deg,#fff,#ece8ef); box-shadow:0 16px 30px rgba(255,255,255,.09); }
+  .btn.secondary{ color:#fff; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.10); }
+  .btn.tiny{ width:auto; padding:10px 14px; border-radius:999px; font-size:13px; margin-top:0; }
+
+  .helper{ margin-top:12px; color:rgba(255,255,255,.54); font-size:12px; line-height:1.5; }
+
+  .heart-wrap{ display:grid; justify-items:center; gap:16px; padding:6px 0 2px; }
+  .click-hint{ font-size:14px; color:rgba(255,255,255,.78); text-align:center; }
+  .heart-btn{ position:relative; width:min(250px,65vw); aspect-ratio:1/1; border:none; background:transparent; cursor:pointer; -webkit-tap-highlight-color:transparent; display:grid; place-items:center; outline:none; }
+  .heart-shape{ position:relative; width:100%; height:92%; transform:rotate(-45deg); border-radius:26px; background:linear-gradient(180deg, #ff71b6 0%, #ff2f88 55%, #c51f68 100%); box-shadow:0 0 0 10px rgba(255,255,255,.05), 0 20px 60px rgba(255,70,140,.28), inset 0 10px 24px rgba(255,255,255,.18); transition:transform .25s ease, filter .25s ease; }
+  .heart-shape::before,.heart-shape::after{ content:""; position:absolute; width:100%; height:100%; border-radius:50%; background:inherit; }
+  .heart-shape::before{top:-50%;left:0}
+  .heart-shape::after{left:50%;top:0}
+  .heart-btn:active .heart-shape,.heart-btn.pulse .heart-shape{ transform:rotate(-45deg) scale(1.06); filter:saturate(1.2) brightness(1.08); }
+  .sparkle{ position:absolute; inset:0; pointer-events:none; opacity:0; transform:scale(.75); transition:opacity .25s ease, transform .35s ease; display:grid; place-items:center; font-size:28px; }
+  .heart-btn.pulse .sparkle{ opacity:1; transform:scale(1); }
+  .key-below{ display:flex; flex-direction:column; align-items:center; gap:8px; margin-top:-4px; }
+  .key-icon{ font-size:42px; line-height:1; filter: drop-shadow(0 10px 20px rgba(0,0,0,.2)); animation: keyFloat 2.8s ease-in-out infinite; }
+  @keyframes keyFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+  .pin-shell{ position:fixed; inset:0; z-index:20; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.52); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
+  .pin-shell.show{display:flex}
+  .pin-card{ width:min(420px,100%); background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06)); border:1px solid rgba(255,255,255,.12); border-radius:28px; box-shadow:var(--shadow); padding:22px; text-align:center; animation:pinIn .42s ease both; }
+  @keyframes pinIn{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+  .pin-title{ font-size:28px; letter-spacing:-.04em; }
+  .pin-boxes{ display:grid; grid-template-columns:repeat(6, 1fr); gap:10px; margin-top:16px; }
+  .pin-boxes input{ margin-top:0; text-align:center; font-size:22px; padding:14px 0; border-radius:14px; background:rgba(0,0,0,.34); }
+  .pin-msg{ margin-top:10px; font-size:13px; color:rgba(255,255,255,.66); min-height:18px; }
+
+  .music-box{ margin-top:16px; display:grid; gap:10px; padding:16px; border-radius:22px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); }
+  .music-row{ display:grid; gap:10px; }
+  .music-row.inline{ grid-template-columns:1fr auto; align-items:center; }
+  .file-name{ font-size:12px; color:rgba(255,255,255,.68); margin-top:-2px; }
+  .audio-note{ font-size:12px; color:rgba(255,255,255,.58); line-height:1.5; }
+
+  .envelope-stage{ display:grid; gap:18px; justify-items:center; text-align:center; }
+  .envelope-wrap{ width:min(100%,340px); height:280px; display:grid; place-items:center; position:relative; user-select:none; -webkit-tap-highlight-color:transparent; cursor:pointer; }
+  .envelope-halo{ position:absolute; width:200px;height:200px; border-radius:50%; background:radial-gradient(circle, rgba(255,134,191,.22), transparent 70%); animation:pulse 3.8s ease-in-out infinite; }
+  .envelope{ width:250px; height:170px; position:relative; transform:translateY(8px); animation:levitate 4.1s ease-in-out infinite; filter:drop-shadow(0 24px 40px rgba(0,0,0,.38)); }
+  .env-base,.env-left,.env-right,.env-flap,.env-paper{ position:absolute; inset:0; border-radius:22px; }
+  .env-base{ background:linear-gradient(180deg,#fff4f8,#ffdfe8); border:1px solid rgba(255,255,255,.45); overflow:hidden; }
+  .env-left{ clip-path:polygon(0 100%,50% 48%,50% 100%); background:linear-gradient(135deg,#ffbfd5,#f6a6c4); opacity:.95; }
+  .env-right{ clip-path:polygon(100% 100%,50% 48%,50% 100%); background:linear-gradient(225deg,#ffb9d2,#f6a9c6); opacity:.95; }
+  .env-flap{ clip-path:polygon(0 0,100% 0,50% 55%); background:linear-gradient(180deg,#fff,#ffe7ef); transform-origin:top center; transition:transform .8s cubic-bezier(.22,1,.36,1); z-index:4; border-bottom:1px solid rgba(255,255,255,.75); }
+  .env-paper{ width:84%; height:72%; left:8%; top:12%; border-radius:16px; background:linear-gradient(180deg,#fff,#fff7fb); transform:translateY(18px) scale(.97); opacity:0; transition:opacity .8s ease, transform .8s cubic-bezier(.22,1,.36,1); z-index:2; box-shadow:0 12px 24px rgba(0,0,0,.08); }
+  .env-paper::before{ content:""; position:absolute;inset:0; border-radius:inherit; background:linear-gradient(180deg, rgba(255,255,255,.92), transparent 42%); }
+  .seal{ position:absolute; left:50%; top:54%; transform:translate(-50%,-50%); width:52px;height:52px;border-radius:50%; z-index:5; background:radial-gradient(circle at 35% 35%, #ffd5e4, #ff87b8 75%, #ff76ad 100%); box-shadow:0 0 0 7px rgba(255,255,255,.18), 0 10px 30px rgba(255,122,181,.25); display:grid; place-items:center; transition:transform .45s ease, opacity .45s ease; }
+  .seal span{font-size:24px}
+  .tap-text{color:var(--muted);font-size:13px}
+  .envelope.open .env-flap{transform:rotateX(180deg)}
+  .envelope.open .env-paper{opacity:1;transform:translateY(-56px) scale(1)}
+  .envelope.open .seal{transform:translate(-50%,-50%) scale(.78);opacity:0}
+
+  .letter-layout{ width:min(100%,460px); display:grid; gap:16px; }
+  .letter{ min-height:440px; border-radius:30px; overflow:hidden; background: radial-gradient(circle at top, rgba(255,255,255,.18), transparent 30%), linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04)); border:1px solid rgba(255,255,255,.10); box-shadow:var(--shadow); }
+  .letter-top{ padding:22px 22px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .letter-title{ font-size:18px; font-weight:700; letter-spacing:-.02em; }
+  .letter-tag{ padding:8px 12px; border-radius:999px; background:rgba(255,255,255,.08); color:rgba(255,255,255,.75); font-size:12px; }
+  .paper-shell{ margin:0 18px 18px; border-radius:26px; background:#fff !important; color:#111 !important; min-height:372px; max-height:66vh; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:22px; box-shadow:0 18px 40px rgba(0,0,0,.15); transform-origin:top center; animation:rise .9s cubic-bezier(.22,1,.36,1) both; }
+  .paper-head{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; }
+  .paper-head .name-line{ font-size:15px; font-weight:700; color:#ff679d; }
+  .paper-head .date-line{ font-size:12px; color:rgba(17,17,17,.52); }
+  .typing{ color:#111 !important; font-size:16px; line-height:1.95; white-space:pre-wrap; min-height:240px; }
+  .cursor{ display:inline-block; width:8px; height:1.1em; margin-left:3px; transform:translateY(2px); background:#ff6ea8; animation:blink 1s step-end infinite; vertical-align:-2px; }
+  .actions{ position:sticky; bottom:0; margin-top:18px; padding-top:12px; background:linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.90) 20%, #fff 55%); }
+
+  .swipe-box{ width:min(100%,430px); text-align:center; }
+  .swipe-panel{ margin-top:16px; position:relative; height:220px; border-radius:30px; border:1px solid rgba(255,255,255,.10); background: radial-gradient(circle at 20% 20%, rgba(255,134,191,.22), transparent 25%), radial-gradient(circle at 80% 30%, rgba(140,240,160,.18), transparent 24%), linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)); box-shadow:var(--shadow); overflow:hidden; touch-action:pan-y; user-select:none; }
+  .swipe-track{ position:absolute;inset:0; display:flex; align-items:flex-start; justify-content:space-between; padding:18px; color:rgba(255,255,255,.78); pointer-events:none; font-size:12px; }
+  .swipe-card{ position:absolute; inset:10px; border-radius:24px; background:linear-gradient(135deg, #ffb0ce, #c1a4ff 55%, #9cc7ff); box-shadow:0 22px 50px rgba(0,0,0,.20); transform:translateX(var(--dx, 0px)); transition:transform .18s ease; display:grid; place-items:center; overflow:hidden; }
+  .swipe-card::before{ content:""; position:absolute;inset:0; background:linear-gradient(120deg, rgba(255,255,255,.25), transparent 35%, rgba(255,255,255,.12) 60%, transparent 80%); animation:shine 3s ease-in-out infinite; }
+  .swipe-card-inner{ position:relative; z-index:1; color:white; text-align:center; padding:18px; }
+  .swipe-emoji{font-size:44px;line-height:1;margin-bottom:8px}
+  .progress{ position:absolute; left:18px;right:18px;bottom:16px; height:6px;border-radius:999px; background:rgba(255,255,255,.16); overflow:hidden; }
+  .progress > i{ display:block; width:var(--prog, 0%); height:100%; border-radius:inherit; background:linear-gradient(90deg,#fff,#ffd5e4,#fff); box-shadow:0 0 18px rgba(255,255,255,.35); transition:width .12s linear; }
+
+  .final{ min-height:180vh; padding-top:78px; display:block; }
+  .hero{ position:sticky; top:18px; text-align:center; padding:0 20px; }
+  .hero .title{ margin-top:12px; font-size:clamp(30px,7vw,42px); }
+  .hero p{ margin-top:10px; color:rgba(255,255,255,.72); line-height:1.65; }
+  .flower{ position:relative; width:360px; height:500px; margin:16px auto 0; transform-origin:center top; animation:bouquetSway 5s ease-in-out infinite; will-change:transform; }
+  .stem{ position:absolute; left:50%; bottom:54px; width:10px; height:285px; border-radius:999px; background:linear-gradient(180deg, #98f0a8, #47bc82 92%); transform:translateX(-50%); box-shadow:0 0 20px rgba(116,255,160,.12); }
+  .stem::before,.stem::after{ content:""; position:absolute; width:78px;height:20px; border-radius:999px 999px 999px 0; background:linear-gradient(180deg, #98f0a8, #47bc82); top:112px; opacity:.9; }
+  .stem::before{left:-62px;transform:rotate(-28deg)}
+  .stem::after{right:-62px;transform:rotate(28deg) scaleX(-1)}
+  .ribbon{ position:absolute; left:50%; bottom:30px; transform:translateX(-50%); width:170px; height:84px; background:linear-gradient(180deg, rgba(255,177,209,.95), rgba(255,132,179,.92)); clip-path:polygon(50% 0%, 63% 16%, 100% 20%, 74% 42%, 82% 100%, 50% 74%, 18% 100%, 26% 42%, 0% 20%, 37% 16%); filter:drop-shadow(0 10px 18px rgba(255,118,173,.15)); opacity:.95; }
+  .ribbon::before,.ribbon::after{ content:""; position:absolute; top:14px; width:76px; height:44px; background:linear-gradient(180deg, rgba(255,184,214,.96), rgba(255,130,178,.92)); clip-path:polygon(0 50%, 70% 0%, 100% 50%, 70% 100%); }
+  .ribbon::before{left:-56px;transform:rotate(-12deg)}
+  .ribbon::after{right:-56px;transform:scaleX(-1) rotate(-12deg)}
+  .bouquet-glow{ position:absolute; left:50%; top:30%; width:290px;height:290px; transform:translateX(-50%); border-radius:50%; background:radial-gradient(circle, rgba(255,150,205,.16), transparent 58%); filter:blur(12px); animation:glow 4s ease-in-out infinite; }
+  .flower-bloom{ position:absolute; left:50%; top:50%; width:70px; height:70px; transform-origin:center; animation: bloomPop 1s cubic-bezier(.22,1,.36,1) both; filter:drop-shadow(0 0 18px rgba(255,255,255,.06)); }
+  .flower-bloom .petal{ position:absolute; left:50%; top:50%; width:18px; height:34px; border-radius:999px; transform-origin:center 18px; transform:translate(-50%, -50%) rotate(var(--rot)) translateY(-16px); background:var(--petal); box-shadow:inset 0 3px 8px rgba(255,255,255,.18); }
+  .flower-bloom .center{ position:absolute; left:50%; top:50%; width:18px; height:18px; transform:translate(-50%, -50%); border-radius:50%; background:radial-gradient(circle at 35% 35%, #fff5b9, #f6cc4f 60%, #e6a500 100%); box-shadow:0 0 16px rgba(255,220,126,.4); }
+  .flower-bloom.daisy .petal{width:16px;height:34px}
+  .flower-bloom.rose .petal{width:20px;height:22px;border-radius:14px 14px 40px 14px}
+  .flower-bloom.tulip .petal{width:20px;height:28px;border-radius:24px 24px 30px 30px}
+  .leaf{ position:absolute; width:54px; height:26px; border-radius:0 999px 999px 999px; background:linear-gradient(180deg, #9af0a7, #3b9b6f); transform-origin:left center; opacity:.92; filter:drop-shadow(0 3px 6px rgba(0,0,0,.15)); }
+  .section{ width:min(500px, calc(100% - 32px)); margin:120px auto 0; padding:24px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:24px; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); opacity:0; transform:translateY(60px); transition:opacity .9s ease, transform .9s ease; }
+  .section.show{ opacity:1; transform:translateY(0); }
+  .section h2{ font-size:22px; margin-bottom:10px; }
+  .section p{ line-height:1.8; color:rgba(255,255,255,.78); }
+  .heart{ position:fixed; bottom:-30px; pointer-events:none; z-index:6; animation: heartRise var(--dur) linear forwards; font-size:var(--size); opacity:.9; filter:drop-shadow(0 0 8px rgba(255,120,180,.25)); }
+  @keyframes heartRise{ from{ transform:translateY(0) rotate(0deg) scale(.9); opacity:0; } 10%{opacity:.96} to{ transform:translateY(-120vh) rotate(20deg) scale(1.08); opacity:0; } }
+  @keyframes levitate{50%{transform:translateY(-10px)}}
+  @keyframes pulse{50%{transform:scale(1.05);opacity:1}}
+  @keyframes rise{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes blink{50%{opacity:0}}
+  @keyframes shine{50%{opacity:1;transform:translateX(18%)}}
+  @keyframes bloomPop{from{opacity:0;transform:translateY(18px) scale(.35)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes bouquetSway{0%,100%{transform:rotate(-2.2deg)}50%{transform:rotate(2.4deg)}}
+  @keyframes glow{0%,100%{transform:translateX(-50%) scale(.96);opacity:.58}50%{transform:translateX(-50%) scale(1.06);opacity:1}}
+
+  @media (max-width:420px){
+    .card{padding:18px;border-radius:26px}
+    .paper-shell{margin:0 14px 14px;padding:18px}
+    .typing{font-size:15px}
+    .flower{transform:scale(.92);transform-origin:top center}
+    .hero .title{font-size:clamp(28px,8vw,38px)}
+    .pin-boxes{gap:8px}
+    .pin-boxes input{font-size:20px;padding:12px 0}
+  }
+  @media (prefers-reduced-motion: reduce){ *,*::before,*::after{ animation:none !important; transition:none !important; scroll-behavior:auto !important; } }
+</style>
+</head>
+<body>
+  <div class="bg-hearts" id="bgHearts"></div>
+
+  <section id="page-heart" class="page active">
+    <div class="card" style="max-width:480px">
+      <div class="chip">💗 buka kejutan</div>
+      <h1 class="title" style="margin-top:14px">Tekan gambar hati</h1>
+      <p class="subtitle">Di bawahnya ada kunci kecil. Nanti muncul PIN dulu sebelum masuk ke suratnya.</p>
+      <div class="heart-wrap">
+        <button id="heartBtn" class="heart-btn" type="button" aria-label="tekan gambar hati">
+          <div class="heart-shape"></div>
+          <div class="sparkle">✨</div>
+        </button>
+        <div class="key-below">
+          <div class="key-icon">🔑</div>
+          <div class="click-hint">tekan hati di atas dulu ya</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="page-name" class="page">
+    <div class="card">
+      <div class="chip">✨ birthday surprise</div>
+      <h1 class="title" style="margin-top:14px">Ketik nama dia 💖</h1>
+      <p class="subtitle">Nanti suratnya akan memanggil dia langsung dengan nama yang kamu tulis.</p>
+      <input id="nameInput" type="text" placeholder="misal: mita" maxlength="40" autocomplete="off" />
+      <div class="music-box">
+        <div class="chip">🎵 lagu custom</div>
+        <div class="music-row">
+          <label class="btn secondary tiny" for="musicFile" style="display:inline-flex;align-items:center;justify-content:center;">Pilih file lagu</label>
+          <input id="musicFile" type="file" accept="audio/*" hidden />
+          <div id="musicFileName" class="file-name">Belum ada file dipilih</div>
+        </div>
+        <div class="music-row inline">
+          <input id="musicUrl" type="url" placeholder="atau tempel link mp3 direct di sini" style="margin-top:0" />
+          <button id="useUrlBtn" class="btn secondary tiny" type="button">Pakai</button>
+        </div>
+        <div class="music-row inline">
+          <button id="musicToggleBtn" class="btn primary tiny" type="button">Putar musik</button>
+          <button id="clearMusicBtn" class="btn secondary tiny" type="button">Hapus lagu</button>
+        </div>
+        <div class="audio-note">Paling enak pakai <b>file mp3 di repo</b> supaya aman dan tidak gampang error. Link juga bisa, tapi harus direct ke file audio.</div>
+      </div>
+      <button id="startBtn" class="btn primary" type="button">Lanjut</button>
+      <button id="skipMusicBtn" class="btn secondary" type="button">Lanjut tanpa musik</button>
+    </div>
+  </section>
+
+  <section id="page-envelope" class="page">
+    <div class="card envelope-stage">
+      <div>
+        <div class="chip">💌 ada surat buat <span id="nameChip"></span></div>
+        <h2 class="title" style="font-size:clamp(28px,7vw,36px);margin-top:14px">Klik amplopnya ya</h2>
+        <p class="subtitle">Buka pelan-pelan, habis itu ada pesan manis di dalamnya.</p>
+      </div>
+      <div id="envelopeWrap" class="envelope-wrap" role="button" tabindex="0" aria-label="buka surat">
+        <div class="envelope-halo"></div>
+        <div id="envelope" class="envelope">
+          <div class="env-paper"></div>
+          <div class="env-base"></div>
+          <div class="env-left"></div>
+          <div class="env-right"></div>
+          <div class="env-flap"></div>
+          <div class="seal"><span>❤</span></div>
+        </div>
+      </div>
+      <div class="tap-text">ketuk amplop untuk membuka</div>
+    </div>
+  </section>
+
+  <section id="page-letter" class="page">
+    <div class="letter-layout">
+      <div class="letter">
+        <div class="letter-top">
+          <div class="letter-title">Surat kecil untuk <span id="nameTitle"></span></div>
+          <div class="letter-tag">from the heart</div>
+        </div>
+        <div class="paper-shell">
+          <div class="paper-head">
+            <div class="name-line">Untuk kamu, <span id="namePaper"></span> ❤️</div>
+            <div class="date-line">hari ini spesial</div>
+          </div>
+          <div id="typingText" class="typing"></div><span id="cursor" class="cursor"></span>
+          <div class="actions">
+            <button id="continueBtn" class="btn primary" type="button">Lanjut ke hadiah</button>
+            <button id="replayBtn" class="btn secondary" type="button">Baca lagi</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="page-swipe" class="page">
+    <div class="swipe-box">
+      <div class="chip">👉 swipe ke kanan</div>
+      <h2 class="title" style="font-size:clamp(28px,7vw,38px);margin-top:14px">Geser layar buat buka kejutan</h2>
+      <p class="subtitle">Tarik kartu ke kanan sampai mentok, nanti bunga bakal muncul.</p>
+      <div id="swipePanel" class="swipe-panel">
+        <div class="swipe-track"><span>drag me</span><span id="swipePercent">0%</span></div>
+        <div id="swipeCard" class="swipe-card" style="--dx:0px;--prog:0%;">
+          <div class="swipe-card-inner">
+            <div class="swipe-emoji">🌸</div>
+            <div style="font-size:18px;font-weight:700">Tarik ke kanan</div>
+            <div style="margin-top:6px;font-size:13px;opacity:.92">buat lihat bouquet bunga</div>
+          </div>
+        </div>
+        <div class="progress"><i id="progressBar"></i></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="page-final" class="page final">
+    <div style="width:100%">
+      <div class="hero">
+        <div class="chip">💖 happy birthday, <span id="nameFinal"></span></div>
+        <div class="bouquet-glow"></div>
+        <div class="flower" id="bouquet">
+          <div class="stem"></div>
+          <div class="ribbon"></div>
+        </div>
+        <h1 class="title">Semoga hari ini manis terus</h1>
+        <p>Scroll pelan-pelan ya, biar animasinya terasa hidup ✨</p>
+      </div>
+      <div class="section reveal"><h2>💌 Untuk Kamu</h2><p>Aku bikin ini cuma buat kamu. Biar saat dibuka, kamu senyum dulu sebelum baca lanjutannya.</p></div>
+      <div class="section reveal"><h2>🌸 Satu Harapan</h2><p>Semoga tahun ini membawa lebih banyak kebahagiaan, ketenangan, dan hal-hal baik buat hidupmu.</p></div>
+      <div class="section reveal"><h2>❤️ Dan Terakhir...</h2><p>Aku sayang kamu. Happy Birthday.</p></div>
+    </div>
+  </section>
+
+  <div class="pin-shell" id="pinShell" aria-hidden="true">
+    <div class="pin-card">
+      <div class="chip">🔐 masukkan pin</div>
+      <h2 class="pin-title" style="margin-top:12px">Kunci kecilnya</h2>
+      <p class="subtitle" style="margin-top:10px">Masukkan PIN untuk lanjut ke surat.</p>
+      <div class="pin-boxes" aria-label="pin input">
+        <input id="pin1" inputmode="numeric" maxlength="1" />
+        <input id="pin2" inputmode="numeric" maxlength="1" />
+        <input id="pin3" inputmode="numeric" maxlength="1" />
+        <input id="pin4" inputmode="numeric" maxlength="1" />
+        <input id="pin5" inputmode="numeric" maxlength="1" />
+        <input id="pin6" inputmode="numeric" maxlength="1" />
+      </div>
+      <div id="pinMsg" class="pin-msg"></div>
+      <button id="pinCloseBtn" class="btn secondary" type="button">Tutup</button>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const pages = [...document.querySelectorAll('.page')];
+  const $ = (id) => document.getElementById(id);
+  const el = {
+    heartBtn: $('heartBtn'), pinShell: $('pinShell'), pinMsg: $('pinMsg'), pinCloseBtn: $('pinCloseBtn'),
+    pinInputs: [1,2,3,4,5,6].map(n => $(`pin${n}`)),
+    nameInput: $('nameInput'), startBtn: $('startBtn'), skipMusicBtn: $('skipMusicBtn'),
+    musicFile: $('musicFile'), musicFileName: $('musicFileName'), musicUrl: $('musicUrl'), useUrlBtn: $('useUrlBtn'), musicToggleBtn: $('musicToggleBtn'), clearMusicBtn: $('clearMusicBtn'),
+    envelopeWrap: $('envelopeWrap'), envelope: $('envelope'), continueBtn: $('continueBtn'), replayBtn: $('replayBtn'),
+    swipePanel: $('swipePanel'), swipeCard: $('swipeCard'), progressBar: $('progressBar'), swipePercent: $('swipePercent'), typingText: $('typingText'), cursor: $('cursor'), bouquet: $('bouquet'),
+    nameChip: $('nameChip'), nameTitle: $('nameTitle'), namePaper: $('namePaper'), nameFinal: $('nameFinal'), bgHearts: $('bgHearts'), pageFinal: $('page-final')
+  };
+
+  let giftName = '';
+  let envelopeOpened = false;
+  let typingTimer = null;
+  let musicOn = false;
+  let musicTimer = null;
+  let audioEl = null;
+  let objectUrl = null;
+  let heartsTimer = null;
+  const PIN = '040609';
+  const letterText = (name) => `Selamat ulang tahun, ${name}!\n\nHari ini aku cuma ingin bilang terima kasih karena kamu sudah hadir.\n\nSemoga hari-harimu selalu dipenuhi kebahagiaan, kesehatan, dan orang-orang baik.\n\nAku bangga sama kamu, aku senang bisa mengenal kamu, dan aku berharap senyum kamu selalu ada.\n\nHappy Birthday ❤️`;
+
+  function showPage(id){ pages.forEach(p => p.classList.remove('active')); const target = $(id); if(target) target.classList.add('active'); window.scrollTo({ top: 0, behavior: 'instant' }); }
+  function cleanName(value){ return value.trim().replace(/\s+/g, ' '); }
+  function syncNames(){ const n = giftName || 'sayang'; el.nameChip.textContent = n; el.nameTitle.textContent = n; el.namePaper.textContent = n; el.nameFinal.textContent = n; }
+
+  function startTyping(text){ clearInterval(typingTimer); el.typingText.textContent = ''; el.cursor.style.display = 'inline-block'; let i = 0; typingTimer = setInterval(() => { el.typingText.textContent = text.slice(0, i++); if (i > text.length){ clearInterval(typingTimer); el.cursor.style.display = 'none'; } }, 22); }
+
+  function makeHeart(){ const heart = document.createElement('div'); heart.className = 'heart'; heart.textContent = Math.random() > 0.5 ? '💖' : '💗'; heart.style.left = `${Math.random() * 100}vw`; heart.style.setProperty('--dur', `${4.8 + Math.random() * 2.4}s`); heart.style.setProperty('--size', `${18 + Math.random() * 14}px`); heart.style.animationDelay = `${Math.random() * .6}s`; document.body.appendChild(heart); setTimeout(() => heart.remove(), 7500); }
+  function spawnBackgroundHearts(){ el.bgHearts.innerHTML = ''; const total = 28; for (let i = 0; i < total; i++){ const span = document.createElement('span'); span.textContent = Math.random() > 0.52 ? '💖' : '💗'; span.style.setProperty('--x', `${Math.random() * 100}vw`); span.style.setProperty('--s', `${14 + Math.random() * 18}px`); span.style.setProperty('--o', `${0.14 + Math.random() * 0.22}`); span.style.setProperty('--d', `${8 + Math.random() * 11}s`); span.style.animationDelay = `${-Math.random() * 12}s`; el.bgHearts.appendChild(span); } }
+
+  function makeMusic(){ const Ctx = window.AudioContext || window.webkitAudioContext; if (!Ctx) return null; if (!window.__audioCtx) window.__audioCtx = new Ctx(); if (window.__audioCtx.state === 'suspended') window.__audioCtx.resume(); return window.__audioCtx; }
+  function playNote(freq, when, duration, gainVal = 0.03, type = 'sine'){ const ctx = makeMusic(); if (!ctx) return; const osc = ctx.createOscillator(); const gain = ctx.createGain(); const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 900; osc.type = type; osc.frequency.value = freq; gain.gain.value = 0.0001; osc.connect(filter); filter.connect(gain); gain.connect(ctx.destination); const now = ctx.currentTime + when; gain.gain.exponentialRampToValueAtTime(gainVal, now + 0.05); gain.gain.exponentialRampToValueAtTime(0.0001, now + duration); osc.start(now); osc.stop(now + duration + 0.05); }
+  function startMusic(){ if (musicOn || !audioEl || !audioEl.src) return; audioEl.loop = true; audioEl.volume = 0.45; const p = audioEl.play(); if (p && typeof p.catch === 'function') p.catch(() => {}); musicOn = true; el.musicToggleBtn.textContent = 'Pause musik'; }
+  function stopMusic(){ if (audioEl) audioEl.pause(); musicOn = false; el.musicToggleBtn.textContent = 'Putar musik'; if (musicTimer) clearInterval(musicTimer); musicTimer = null; }
+  function setAudioSrcFromFile(file){ if (objectUrl) URL.revokeObjectURL(objectUrl); objectUrl = URL.createObjectURL(file); audioEl.src = objectUrl; el.musicFileName.textContent = file.name; musicOn = false; el.musicToggleBtn.textContent = 'Putar musik'; }
+  function setAudioSrcFromUrl(url){ audioEl.src = url; objectUrl = null; el.musicFileName.textContent = 'Link terpasang'; musicOn = false; el.musicToggleBtn.textContent = 'Putar musik'; }
+
+  function buildBouquet(){ const bouquet = el.bouquet; bouquet.innerHTML = `<div class="stem"></div><div class="ribbon"></div>`; const flowers = [ { x: 56, y: 98, c: '#f8b6d8', t: 'daisy', s: 1.08, d: 0 }, { x: 112, y: 72, c: '#ffbf86', t: 'rose', s: .86, d: .08 }, { x: 172, y: 40, c: '#c9b0ff', t: 'tulip', s: .94, d: .12 }, { x: 226, y: 62, c: '#9edcff', t: 'rose', s: .88, d: .18 }, { x: 274, y: 100, c: '#f7a9c7', t: 'daisy', s: 1.02, d: .22 }, { x: 98, y: 142, c: '#ffd58f', t: 'tulip', s: .82, d: .28 }, { x: 160, y: 118, c: '#ff9fa9', t: 'rose', s: 1.02, d: .34 }, { x: 208, y: 136, c: '#e1b3ff', t: 'daisy', s: .9, d: .4 }, { x: 250, y: 145, c: '#b7e0ff', t: 'tulip', s: .84, d: .46 }, { x: 134, y: 28, c: '#f6b0d6', t: 'rose', s: .95, d: .5 }, { x: 196, y: 12, c: '#ffdca0', t: 'daisy', s: .92, d: .56 }, { x: 92, y: 206, c: '#f7a9c7', t: 'rose', s: .78, d: .62 }, { x: 278, y: 205, c: '#b8e4ff', t: 'daisy', s: .8, d: .68 }, ]; flowers.forEach(f => { const flower = document.createElement('div'); flower.className = `flower-bloom ${f.t}`; flower.style.left = `${f.x}px`; flower.style.top = `${f.y}px`; flower.style.transform = `translate(-50%, 0) scale(${f.s})`; flower.style.animationDelay = `${f.d}s`; flower.innerHTML = `<div class="petal" style="--rot:0deg;--petal:${f.c}"></div><div class="petal" style="--rot:45deg;--petal:${f.c}"></div><div class="petal" style="--rot:90deg;--petal:${f.c}"></div><div class="petal" style="--rot:135deg;--petal:${f.c}"></div><div class="petal" style="--rot:180deg;--petal:${f.c}"></div><div class="petal" style="--rot:225deg;--petal:${f.c}"></div><div class="petal" style="--rot:270deg;--petal:${f.c}"></div><div class="petal" style="--rot:315deg;--petal:${f.c}"></div><div class="center"></div>`; bouquet.appendChild(flower); }); const leaves = [ { left: 68, top: 208, rot: -26 }, { left: 72, top: 260, rot: -42 }, { left: 266, top: 220, rot: 36 }, { left: 252, top: 280, rot: 18 }, ]; leaves.forEach((l, idx) => { const leaf = document.createElement('div'); leaf.className = 'leaf'; leaf.style.left = `${l.left}px`; leaf.style.top = `${l.top}px`; leaf.style.transform = `rotate(${l.rot}deg)`; leaf.style.animation = `levitate ${4 + idx * .25}s ease-in-out infinite`; bouquet.appendChild(leaf); }); }
+  function spawnFloatingHearts(count = 10){ for(let i = 0; i < count; i++){ const heart = document.createElement('div'); heart.className = 'heart'; heart.textContent = Math.random() > 0.5 ? '💖' : '💗'; heart.style.left = `${Math.random() * 100}vw`; heart.style.setProperty('--dur', `${4.8 + Math.random() * 2.4}s`); heart.style.setProperty('--size', `${18 + Math.random() * 14}px`); heart.style.animationDelay = `${Math.random() * .6}s`; document.body.appendChild(heart); setTimeout(() => heart.remove(), 7500); } }
+  function completeSwipe(){ showPage('page-final'); buildBouquet(); spawnFloatingHearts(8); if (heartsTimer) clearInterval(heartsTimer); heartsTimer = setInterval(() => spawnFloatingHearts(3), 2500); const observer = new IntersectionObserver(entries => { entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('show'); }); }, { threshold: 0.16 }); document.querySelectorAll('.reveal').forEach(section => observer.observe(section)); }
+
+  function setPinMsg(text, ok=false){ el.pinMsg.textContent = text; el.pinMsg.style.color = ok ? '#9ff2b0' : 'rgba(255,255,255,.66)'; }
+  function openPin(){ el.pinShell.classList.add('show'); el.pinShell.setAttribute('aria-hidden', 'false'); setPinMsg('Masukkan PIN 6 digit.'); el.pinInputs[0].focus(); }
+  function closePin(){ el.pinShell.classList.remove('show'); el.pinShell.setAttribute('aria-hidden', 'true'); setPinMsg(''); el.pinInputs.forEach(i => i.value = ''); }
+  function checkPin(){ const pin = el.pinInputs.map(i => i.value).join(''); if (pin.length < 6) return; if (pin === PIN){ setPinMsg('PIN benar ✨', true); setTimeout(() => { closePin(); showPage('page-name'); }, 450); } else { setPinMsg('PIN salah. Coba lagi ya.'); el.pinInputs.forEach(i => i.value = ''); el.pinInputs[0].focus(); } }
+  function focusNextPin(i){ const next = el.pinInputs[i + 1]; if (next) next.focus(); }
+
+  el.heartBtn.addEventListener('click', () => { el.heartBtn.classList.add('pulse'); setTimeout(() => el.heartBtn.classList.remove('pulse'), 280); openPin(); });
+  el.pinCloseBtn.addEventListener('click', closePin);
+  el.pinShell.addEventListener('click', (e) => { if (e.target === el.pinShell) closePin(); });
+  el.pinInputs.forEach((input, idx) => { input.addEventListener('input', () => { input.value = input.value.replace(/\D/g, '').slice(0,1); if (input.value) focusNextPin(idx); checkPin(); }); input.addEventListener('keydown', (e) => { if (e.key === 'Backspace' && !input.value) { const prev = el.pinInputs[idx - 1]; if (prev) prev.focus(); } if (e.key === 'Enter') checkPin(); }); input.addEventListener('paste', (e) => { const text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6); if (!text) return; e.preventDefault(); [...text].forEach((ch, i) => { if (el.pinInputs[i]) el.pinInputs[i].value = ch; }); checkPin(); }); });
+  el.startBtn.addEventListener('click', () => { const value = cleanName(el.nameInput.value); if (!value) { el.nameInput.focus(); return; } giftName = value; syncNames(); showPage('page-envelope'); });
+  el.skipMusicBtn.addEventListener('click', () => { if (audioEl) audioEl.removeAttribute('src'); if (objectUrl) URL.revokeObjectURL(objectUrl); objectUrl = null; el.musicFileName.textContent = 'Tidak ada lagu yang dipakai'; stopMusic(); el.startBtn.click(); });
+  el.nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') el.startBtn.click(); });
+  el.musicFile.addEventListener('change', () => { const file = el.musicFile.files && el.musicFile.files[0]; if (!file) return; if (!audioEl) audioEl = new Audio(); setAudioSrcFromFile(file); });
+  el.useUrlBtn.addEventListener('click', () => { const url = el.musicUrl.value.trim(); if (!url) return; if (!audioEl) audioEl = new Audio(); setAudioSrcFromUrl(url); });
+  el.musicToggleBtn.addEventListener('click', () => { if (!audioEl) audioEl = new Audio(); if (!audioEl.src) { setPinMsg('Pilih file lagu atau tempel link mp3 dulu.'); return; } if (musicOn) stopMusic(); else startMusic(); });
+  el.clearMusicBtn.addEventListener('click', () => { if (audioEl) { audioEl.pause(); audioEl.removeAttribute('src'); audioEl.load(); } if (objectUrl) URL.revokeObjectURL(objectUrl); objectUrl = null; musicOn = false; el.musicFile.value = ''; el.musicUrl.value = ''; el.musicFileName.textContent = 'Belum ada file dipilih'; el.musicToggleBtn.textContent = 'Putar musik'; });
+
+  el.envelopeWrap.addEventListener('click', () => { if (!envelopeOpened) { envelopeOpened = true; el.envelope.classList.add('open'); setTimeout(() => { showPage('page-letter'); startTyping(letterText(giftName)); }, 700); } });
+  el.envelopeWrap.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') el.envelopeWrap.click(); });
+  el.continueBtn.addEventListener('click', () => showPage('page-swipe'));
+  el.replayBtn.addEventListener('click', () => startTyping(letterText(giftName)));
+
+  let swipeActive = false; let startX = 0; const swipeMax = 210;
+  function setSwipe(dx){ const clamped = Math.max(0, Math.min(swipeMax, dx)); const pct = Math.round((clamped / swipeMax) * 100); el.swipeCard.style.setProperty('--dx', `${clamped}px`); el.progressBar.style.width = `${pct}%`; el.swipePercent.textContent = `${pct}%`; if (pct >= 100) completeSwipe(); }
+  function resetSwipe(){ el.swipeCard.style.setProperty('--dx', `0px`); el.progressBar.style.width = '0%'; el.swipePercent.textContent = '0%'; }
+  el.swipePanel.addEventListener('pointerdown', (e) => { swipeActive = true; startX = e.clientX; el.swipePanel.setPointerCapture(e.pointerId); e.preventDefault(); });
+  el.swipePanel.addEventListener('pointermove', (e) => { if (!swipeActive) return; setSwipe(e.clientX - startX); });
+  el.swipePanel.addEventListener('pointerup', () => { swipeActive = false; resetSwipe(); });
+  el.swipePanel.addEventListener('pointercancel', () => { swipeActive = false; resetSwipe(); });
+
+  window.addEventListener('scroll', () => { if (!el.pageFinal.classList.contains('active')) return; const y = window.scrollY; if (el.bouquet) el.bouquet.style.transform = `rotate(${Math.sin(y / 220) * 2.2}deg) translateY(${y * 0.06}px)`; }, { passive: true });
+  window.addEventListener('load', () => { spawnBackgroundHearts(); el.nameInput.focus(); });
+})();
+</script>
+</body>
+</html>
